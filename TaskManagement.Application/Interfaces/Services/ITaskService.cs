@@ -12,7 +12,7 @@ namespace TaskManagement.Application.Interfaces.Services
         Task<IEnumerable<TaskDto>> GetFilteredTasksAsync(ETaskStatus? status, DateTime? dueDate);
         Task<TaskDto?> GetTaskByIdAsync(Guid id);
         Task<TaskDto> AddTaskAsync(CreateTaskDto createTaskDto);
-        Task UpdateTaskAsync(TaskDto taskDto);
+        Task UpdateTaskAsync(UpdateTaskDto updateTaskDto);
         Task DeleteTaskAsync(Guid id);
     }
 }

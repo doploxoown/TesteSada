@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using TaskManagement.Application.Interfaces.Services;
 using TaskManagement.Application.Services;
 using TaskManagement.Domain.Interfaces.Repositories;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Repositories;
+using TaskManagementAPI.Extensions;
 using TaskManagementAPI.Middleware;
-using TaskManagement.Application.Interfaces.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.RegisterValidations();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

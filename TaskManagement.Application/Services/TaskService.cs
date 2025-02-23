@@ -62,9 +62,9 @@ namespace TaskManagement.Application.Services
         /// <summary>
         /// Atualiza uma tarefa existente.
         /// </summary>
-        public async Task UpdateTaskAsync(TaskDto taskDto)
+        public async Task UpdateTaskAsync(UpdateTaskDto updateTaskDto)
         {
-            var task = taskDto.ToEntity();
+            var task = updateTaskDto.ToEntity();
             await _taskRepository.UpdateAsync(task);
         }
 

@@ -29,6 +29,7 @@ namespace TaskManagementAPI.Controllers
         /// <returns>Lista de tarefas.</returns>
         /// <response code="200">Retorna a lista de tarefas.</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<TaskDto>), 200)]
         public async Task<IActionResult> GetAll()
         {
             var tasks = await _taskService.GetAllTasksAsync();
@@ -43,6 +44,8 @@ namespace TaskManagementAPI.Controllers
         /// <response code="200">Retorna a tarefa encontrada.</response>
         /// <response code="404">Tarefa não encontrada.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(TaskDto), 200)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> GetById(Guid id)
         {
             var task = await _taskService.GetTaskByIdAsync(id);
@@ -57,6 +60,7 @@ namespace TaskManagementAPI.Controllers
         /// <returns>Lista de tarefas filtradas.</returns>
         /// <response code="200">Retorna as tarefas filtradas.</response>
         [HttpGet("filter")]
+        [ProducesResponseType(typeof(IEnumerable<TaskDto>), 200)]
         public async Task<IActionResult> GetFilteredTasks([FromQuery] ETaskStatus? status, [FromQuery] DateTime? dueDate)
         {
             var tasks = await _taskService.GetFilteredTasksAsync(status, dueDate);
@@ -69,7 +73,10 @@ namespace TaskManagementAPI.Controllers
         /// <param name="createTaskDto">Objeto da tarefa a ser criada.</param>
         /// <returns>A tarefa criada.</returns>
         /// <response code="201">Tarefa criada com sucesso.</response>
+        /// <response code="400">Dados inválidos.</response>
         [HttpPost]
+        [ProducesResponseType(typeof(CreateTaskDto), 201)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> Create([FromBody] CreateTaskDto createTaskDto)
         {
             if (!ModelState.IsValid)
@@ -86,17 +93,19 @@ namespace TaskManagementAPI.Controllers
         /// <param name="task">Dados atualizados da tarefa.</param>
         /// <returns>Código 204 se a atualização for bem-sucedida.</returns>
         /// <response code="204">Tarefa atualizada com sucesso.</response>
-        /// <response code="400">IDs incompatíveis.</response>
+        /// <response code="400">IDs incompatíveis ou dados inválidos.</response>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] TaskDto taskDto)
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTaskDto updateTaskDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (id != taskDto.Id)
+            if (id != updateTaskDto.Id)
                 return BadRequest("O ID da URL não corresponde ao ID do corpo da requisição.");
 
-            await _taskService.UpdateTaskAsync(taskDto);
+            await _taskService.UpdateTaskAsync(updateTaskDto);
             return NoContent();
         }
 
@@ -107,6 +116,7 @@ namespace TaskManagementAPI.Controllers
         /// <returns>Código 204 se a remoção for bem-sucedida.</returns>
         /// <response code="204">Tarefa excluída com sucesso.</response>
         [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _taskService.DeleteTaskAsync(id);
