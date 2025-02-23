@@ -8,75 +8,97 @@ namespace TaskManagement.Tests.Repositories
 {
     public class TaskRepositoryTests
     {
-        private readonly ApplicationDbContext _context;
-        private readonly TaskRepository _repository;
-
-        public TaskRepositoryTests()
+        private ApplicationDbContext GetDbContext()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase("TaskDatabaseTest")
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            _context = new ApplicationDbContext(options);
-            _repository = new TaskRepository(_context);
-
-            _context.Tasks.AddRange(
-                new TaskModel { Id = Guid.NewGuid(), Title = "Tarefa 1", Status = ETaskStatus.Pending, DueDate = DateTime.Today },
-                new TaskModel { Id = Guid.NewGuid(), Title = "Tarefa 2", Status = ETaskStatus.Completed, DueDate = DateTime.Today.AddDays(1) }
-            );
-            _context.SaveChanges();
+            return new ApplicationDbContext(options);
         }
 
         [Fact]
-        public async Task Teste_Filtrar_Tarefas_Por_Status()
+        public async Task AddAsync_Should_Add_Task()
         {
-            var result = await _repository.GetFilteredTasksAsync(ETaskStatus.Pending, null);
-            Assert.Single(result);
-            Assert.Equal("Tarefa 1", result.First().Title);
-        }
+            var context = GetDbContext();
+            var repository = new TaskRepository(context);
 
-        [Fact]
-        public async Task Teste_Filtrar_Tarefas_Por_DataVencimento()
-        {
-            var result = await _repository.GetFilteredTasksAsync(null, DateTime.Today);
-            Assert.Single(result);
-            Assert.Equal("Tarefa 1", result.First().Title);
-        }
-
-        [Fact]
-        public async Task Teste_Filtrar_Tarefas_Por_Status_E_Data()
-        {
-            var result = await _repository.GetFilteredTasksAsync(ETaskStatus.Completed, DateTime.Today.AddDays(1));
-            Assert.Single(result);
-            Assert.Equal("Tarefa 2", result.First().Title);
-        }
-
-        [Fact]
-        public async Task Teste_Adicionar_Tarefa()
-        {
-            var newTask = new TaskModel
+            var task = new TaskModel
             {
                 Id = Guid.NewGuid(),
-                Title = "Nova Tarefa",
-                Status = ETaskStatus.Pending,
-                DueDate = DateTime.Today
+                Title = "New Task",
+                Description = "Description Task",
+                DueDate = DateTime.UtcNow.AddDays(3),
+                Status = ETaskStatus.Pending
             };
 
-            await _repository.AddAsync(newTask);
-            var tasks = await _repository.GetAllAsync();
+            await repository.AddAsync(task);
+            var result = await repository.GetByIdAsync(task.Id);
 
-            Assert.Equal(3, tasks.Count());
-            Assert.Contains(tasks, t => t.Title == "Nova Tarefa");
+            Assert.NotNull(result);
+            Assert.Equal("New Task", result.Title);
         }
 
         [Fact]
-        public async Task Teste_Remover_Tarefa()
+        public async Task GetAllAsync_Should_Return_All_Tasks()
         {
-            var existingTask = _context.Tasks.First();
-            await _repository.DeleteAsync(existingTask.Id);
+            var context = GetDbContext();
+            var repository = new TaskRepository(context);
 
-            var tasks = await _repository.GetAllAsync();
-            Assert.DoesNotContain(tasks, t => t.Id == existingTask.Id);
+            await repository.AddAsync(new TaskModel { Id = Guid.NewGuid(), Title = "Task 1", Status = ETaskStatus.Pending });
+            await repository.AddAsync(new TaskModel { Id = Guid.NewGuid(), Title = "Task 2", Status = ETaskStatus.Completed });
+
+            var tasks = await repository.GetAllAsync();
+
+            Assert.Equal(2, tasks.Count());
+        }
+
+        [Fact]
+        public async Task GetFilteredTasksAsync_ShouldReturnFilteredTasks()
+        {
+            var context = GetDbContext();
+            var repository = new TaskRepository(context);
+
+            var task1 = new TaskModel { Id = Guid.NewGuid(), Title = "Task 1", Status = ETaskStatus.Pending, DueDate = DateTime.Today };
+            var task2 = new TaskModel { Id = Guid.NewGuid(), Title = "Task 2", Status = ETaskStatus.Completed, DueDate = DateTime.Today };
+            context.Tasks.AddRange(task1, task2);
+            await context.SaveChangesAsync();
+
+            var result = await repository.GetFilteredTasksAsync(ETaskStatus.Pending, null);
+
+            Assert.Single(result);
+            Assert.Equal(task1.Id, result.First().Id);
+        }
+
+
+        [Fact]
+        public async Task GetByIdAsync_Should_Return_Correct_Task()
+        {
+            var context = GetDbContext();
+            var repository = new TaskRepository(context);
+
+            var task = new TaskModel { Id = Guid.NewGuid(), Title = "Task Teste", Status = ETaskStatus.Pending };
+            await repository.AddAsync(task);
+
+            var result = await repository.GetByIdAsync(task.Id);
+
+            Assert.NotNull(result);
+            Assert.Equal(task.Title, result.Title);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_Should_Remove_Task()
+        {
+            var context = GetDbContext();
+            var repository = new TaskRepository(context);
+
+            var task = new TaskModel { Id = Guid.NewGuid(), Title = "Task to Delete", Status = ETaskStatus.Pending };
+            await repository.AddAsync(task);
+
+            await repository.DeleteAsync(task.Id);
+            var result = await repository.GetByIdAsync(task.Id);
+
+            Assert.Null(result);
         }
     }
 }

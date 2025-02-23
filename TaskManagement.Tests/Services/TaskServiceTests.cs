@@ -1,6 +1,8 @@
 ﻿using Moq;
+using TaskManagement.Application.DTOs;
 using TaskManagement.Application.Services;
 using TaskManagement.Domain.Entities;
+using TaskManagement.Domain.Enums;
 using TaskManagement.Domain.Interfaces.Repositories;
 
 namespace TaskManagement.Tests.Services
@@ -19,7 +21,6 @@ namespace TaskManagement.Tests.Services
         [Fact]
         public async Task GetAllTasksAsync_ShouldReturnTaskList()
         {
-            // Arrange
             var tasks = new List<TaskModel>
             {
                 new() { Id = Guid.NewGuid(), Title = "Task 1" },
@@ -28,26 +29,41 @@ namespace TaskManagement.Tests.Services
 
             _taskRepositoryMock.Setup(repo => repo.GetAllAsync()).ReturnsAsync(tasks);
 
-            // Act
             var result = await _taskService.GetAllTasksAsync();
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
         }
 
         [Fact]
+        public async Task GetFilteredTasksAsync_ShouldReturnFilteredTaskDtos()
+        {
+            var taskList = new List<TaskModel>
+            {
+                new TaskModel { Id = Guid.NewGuid(), Title = "Task 1", Status = ETaskStatus.Pending, DueDate = DateTime.Today },
+                new TaskModel { Id = Guid.NewGuid(), Title = "Task 2", Status = ETaskStatus.Completed, DueDate = DateTime.Today }
+            };
+
+            _taskRepositoryMock
+                .Setup(repo => repo.GetFilteredTasksAsync(ETaskStatus.Pending, null))
+                .ReturnsAsync(taskList.Where(t => t.Status == ETaskStatus.Pending));
+
+            var result = await _taskService.GetFilteredTasksAsync(ETaskStatus.Pending, null);
+
+            Assert.Single(result);
+            Assert.Equal("Task 1", result.First().Title);
+            _taskRepositoryMock.Verify(repo => repo.GetFilteredTasksAsync(ETaskStatus.Pending, null), Times.Once);
+        }
+
+        [Fact]
         public async Task GetTaskByIdAsync_ShouldReturnTask_WhenTaskExists()
         {
-            // Arrange
             var task = new TaskModel { Id = Guid.NewGuid(), Title = "Test Task" };
 
             _taskRepositoryMock.Setup(repo => repo.GetByIdAsync(task.Id)).ReturnsAsync(task);
 
-            // Act
             var result = await _taskService.GetTaskByIdAsync(task.Id);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(task.Title, result.Title);
         }
@@ -55,58 +71,52 @@ namespace TaskManagement.Tests.Services
         [Fact]
         public async Task GetTaskByIdAsync_ShouldReturnNull_WhenTaskDoesNotExist()
         {
-            // Arrange
             _taskRepositoryMock.Setup(repo => repo.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((TaskModel?)null);
 
-            // Act
             var result = await _taskService.GetTaskByIdAsync(Guid.NewGuid());
 
-            // Assert
             Assert.Null(result);
         }
 
         [Fact]
         public async Task AddTaskAsync_ShouldCallRepositoryMethod()
         {
-            // Arrange
-            var task = new TaskModel { Title = "New Task" };
+            var createTaskDto = new CreateTaskDto
+            {
+                Title = "New Task",
+                Description = "Description Task",
+                DueDate = DateTime.UtcNow.AddDays(5)
+            };
 
-            _taskRepositoryMock.Setup(repo => repo.AddAsync(task)).Returns(Task.CompletedTask);
+            await _taskService.AddTaskAsync(createTaskDto);
 
-            // Act
-            await _taskService.AddTaskAsync(task);
-
-            // Assert
-            _taskRepositoryMock.Verify(repo => repo.AddAsync(task), Times.Once);
+            _taskRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<TaskModel>()), Times.Once);
         }
 
         [Fact]
         public async Task UpdateTaskAsync_ShouldCallRepositoryMethod()
         {
-            // Arrange
-            var task = new TaskModel { Id = Guid.NewGuid(), Title = "Updated Task" };
+            var taskId = Guid.NewGuid();
+            var taskDto = new TaskDto { Id = taskId, Title = "Updated Task" };
 
-            _taskRepositoryMock.Setup(repo => repo.UpdateAsync(task)).Returns(Task.CompletedTask);
+            _taskRepositoryMock
+                .Setup(repo => repo.UpdateAsync(It.IsAny<TaskModel>()))
+                .Returns(Task.CompletedTask);
 
-            // Act
-            await _taskService.UpdateTaskAsync(task);
+            await _taskService.UpdateTaskAsync(taskDto);
 
-            // Assert
-            _taskRepositoryMock.Verify(repo => repo.UpdateAsync(task), Times.Once);
+            _taskRepositoryMock.Verify(repo => repo.UpdateAsync(It.Is<TaskModel>(t => t.Id == taskDto.Id)), Times.Once);
         }
 
         [Fact]
         public async Task DeleteTaskAsync_ShouldCallRepositoryMethod()
         {
-            // Arrange
             var taskId = Guid.NewGuid();
 
             _taskRepositoryMock.Setup(repo => repo.DeleteAsync(taskId)).Returns(Task.CompletedTask);
 
-            // Act
             await _taskService.DeleteTaskAsync(taskId);
 
-            // Assert
             _taskRepositoryMock.Verify(repo => repo.DeleteAsync(taskId), Times.Once);
         }
     }
