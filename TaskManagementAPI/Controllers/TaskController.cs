@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TaskManagement.Application.Common;
 using TaskManagement.Application.DTOs;
 using TaskManagement.Application.Interfaces.Services;
+using TaskManagement.Domain.Common;
 using TaskManagement.Domain.Enums;
 
 namespace TaskManagementAPI.Controllers
@@ -80,12 +82,20 @@ namespace TaskManagementAPI.Controllers
         public async Task<IActionResult> Create([FromBody] CreateTaskDto createTaskDto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var actionContext = new ActionContext
+                {
+                    HttpContext = HttpContext,
+                    RouteData = RouteData
+                };
+
+                var validationProblem = new CustomBadRequestDetails(actionContext);
+                return new BadRequestObjectResult(validationProblem);
+            }
 
             var taskAdded = await _taskService.AddTaskAsync(createTaskDto);
             return CreatedAtAction(nameof(GetById), new { id = taskAdded.Id }, createTaskDto);
         }
-
         /// <summary>
         /// Atualiza uma tarefa existente.
         /// </summary>
@@ -100,10 +110,26 @@ namespace TaskManagementAPI.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTaskDto updateTaskDto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var actionContext = new ActionContext
+                {
+                    HttpContext = HttpContext,
+                    RouteData = RouteData
+                };
+
+                var validationProblem = new CustomBadRequestDetails(actionContext);
+                return new BadRequestObjectResult(validationProblem);
+            }
 
             if (id != updateTaskDto.Id)
-                return BadRequest("O ID da URL não corresponde ao ID do corpo da requisição.");
+            {
+                var errorDetails = new ErrorDetails
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Message = "O ID da URL não corresponde ao ID do corpo da requisição."
+                };
+                return BadRequest(errorDetails);
+            }
 
             await _taskService.UpdateTaskAsync(updateTaskDto);
             return NoContent();

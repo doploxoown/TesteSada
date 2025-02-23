@@ -101,7 +101,7 @@ namespace TaskManagement.Tests.Controllers
         [Fact]
         public async Task Update_ShouldReturnBadRequest_WhenIdsDoNotMatch()
         {
-            var task = new TaskDto { Id = Guid.NewGuid(), Title = "Updated Task" };
+            var task = new UpdateTaskDto { Id = Guid.NewGuid(), Title = "Updated Task" };
 
             var result = await _taskController.Update(Guid.NewGuid(), task);
 

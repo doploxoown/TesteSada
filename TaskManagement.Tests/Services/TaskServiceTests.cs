@@ -97,7 +97,7 @@ namespace TaskManagement.Tests.Services
         public async Task UpdateTaskAsync_ShouldCallRepositoryMethod()
         {
             var taskId = Guid.NewGuid();
-            var taskDto = new TaskDto { Id = taskId, Title = "Updated Task" };
+            var taskDto = new UpdateTaskDto { Id = taskId, Title = "Updated Task" };
 
             _taskRepositoryMock
                 .Setup(repo => repo.UpdateAsync(It.IsAny<TaskModel>()))

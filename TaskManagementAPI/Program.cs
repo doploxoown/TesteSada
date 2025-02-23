@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TaskManagement.Application.Common;
 using TaskManagement.Application.Interfaces.Services;
 using TaskManagement.Application.Services;
 using TaskManagement.Domain.Interfaces.Repositories;
@@ -9,7 +10,10 @@ using TaskManagementAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+{
+    options.InvalidModelStateResponseFactory = CustomInvalidModelStateResponseFactory.ProduceErrorResponse;
+});
 builder.Services.RegisterValidations();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -28,7 +32,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ValidationMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
