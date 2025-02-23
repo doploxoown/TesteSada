@@ -54,6 +54,21 @@ namespace TaskManagement.Application.Mappers
         }
 
         /// <summary>
+        /// Converte um UpdateTaskDto para TaskModel.
+        /// </summary>
+        public static TaskModel ToEntity(this UpdateTaskDto updateTaskDto)
+        {
+            return new TaskModel
+            {
+                Id = updateTaskDto.Id,
+                Title = updateTaskDto.Title,
+                Description = updateTaskDto.Description,
+                DueDate = updateTaskDto.DueDate.GetValueOrDefault(),
+                Status = updateTaskDto.Status
+            };
+        }
+
+        /// <summary>
         /// Converte uma lista de TaskModel para uma lista de TaskDto.
         /// </summary>
         public static IEnumerable<TaskDto> ToDtoList(this IEnumerable<TaskModel> tasks)

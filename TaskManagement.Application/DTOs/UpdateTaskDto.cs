@@ -7,8 +7,14 @@ namespace TaskManagement.Application.DTOs
     /// <summary>
     /// DTO para criação de uma nova tarefa.
     /// </summary>
-    public class CreateTaskDto
+    public class UpdateTaskDto
     {
+        /// <summary>
+        /// Identificador único da tarefa.
+        /// </summary>
+        /// <example>e1d3f95b-7c6d-4f2c-a93b-708d635b57a3</example>
+        public Guid Id { get; set; }
+
         /// <summary>
         /// Título da tarefa.
         /// </summary>
@@ -30,9 +36,9 @@ namespace TaskManagement.Application.DTOs
         public ETaskStatus Status { get; set; }
     }
 
-    public class CreateTaskDtoValidator : AbstractValidator<CreateTaskDto>
+    public class UpdateTaskDtoValidator : AbstractValidator<UpdateTaskDto>
     {
-        public CreateTaskDtoValidator()
+        public UpdateTaskDtoValidator()
         {
             RuleFor(x => x.Title)
                 .NotEmpty().WithMessage("O título é obrigatório.")
