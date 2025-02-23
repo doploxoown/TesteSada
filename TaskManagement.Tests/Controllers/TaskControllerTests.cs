@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Moq;
-using TaskManagement.Domain.Entities;
-using TaskManagement.Domain.Interfaces.Services;
+using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Interfaces.Services;
+using TaskManagement.Domain.Enums;
 using TaskManagementAPI.Controllers;
 
 namespace TaskManagement.Tests.Controllers
@@ -20,45 +21,79 @@ namespace TaskManagement.Tests.Controllers
         [Fact]
         public async Task GetAll_ShouldReturnOkResult_WithTaskList()
         {
-            // Arrange
-            var tasks = new List<TaskModel> { new() { Id = Guid.NewGuid(), Title = "Task 1" } };
+            var tasks = new List<TaskDto> { new() { Id = Guid.NewGuid(), Title = "Task 1" } };
 
             _taskServiceMock.Setup(svc => svc.GetAllTasksAsync()).ReturnsAsync(tasks);
 
-            // Act
             var result = await _taskController.GetAll();
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnedTasks = Assert.IsType<List<TaskModel>>(okResult.Value);
+            var returnedTasks = Assert.IsType<List<TaskDto>>(okResult.Value);
             Assert.Single(returnedTasks);
         }
 
         [Fact]
+        public async Task GetFilteredTasks_ReturnsOkResult_WithFilteredTasks()
+        {
+            var status = ETaskStatus.Completed;
+            var dueDate = new DateTime(2025, 2, 22);
+            var tasks = new List<TaskDto>
+            {
+                new TaskDto { Id = Guid.NewGuid(), Status = ETaskStatus.Completed, DueDate = dueDate, Description = "Test task" }
+            };
+
+            _taskServiceMock
+                .Setup(service => service.GetFilteredTasksAsync(status, dueDate))
+                .ReturnsAsync(tasks);
+
+            var result = await _taskController.GetFilteredTasks(status, dueDate);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsAssignableFrom<List<TaskDto>>(okResult.Value);
+            Assert.Single(returnValue);
+            Assert.Equal(tasks[0].Id, returnValue[0].Id);
+            Assert.Equal(tasks[0].Status, returnValue[0].Status);
+        }
+
+        [Fact]
+        public async Task GetFilteredTasks_ReturnsOkResult_WithNoTasks()
+        {
+            var status = ETaskStatus.InProgress;
+            var dueDate = new DateTime(2025, 3, 1);
+            var tasks = new List<TaskDto>();
+
+            _taskServiceMock
+                .Setup(service => service.GetFilteredTasksAsync(status, dueDate))
+                .ReturnsAsync(tasks);
+
+            var result = await _taskController.GetFilteredTasks(status, dueDate);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsAssignableFrom<List<TaskDto>>(okResult.Value);
+            Assert.Empty(returnValue);
+        }
+
+
+        [Fact]
         public async Task GetById_ShouldReturnNotFound_WhenTaskDoesNotExist()
         {
-            // Arrange
-            _taskServiceMock.Setup(svc => svc.GetTaskByIdAsync(It.IsAny<Guid>())).ReturnsAsync((TaskModel?)null);
+            _taskServiceMock.Setup(svc => svc.GetTaskByIdAsync(It.IsAny<Guid>())).ReturnsAsync((TaskDto?)null);
 
-            // Act
             var result = await _taskController.GetById(Guid.NewGuid());
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
         [Fact]
         public async Task Create_ShouldReturnCreatedAtAction_WhenTaskIsCreated()
         {
-            // Arrange
-            var newTask = new TaskModel { Id = Guid.NewGuid(), Title = "New Task" };
+            var newTask = new CreateTaskDto { Title = "New Task" };
+            var taskCreated = new TaskDto { Id = Guid.NewGuid(), Title = "New Task" };
 
-            _taskServiceMock.Setup(svc => svc.AddTaskAsync(newTask)).Returns(Task.CompletedTask);
+            _taskServiceMock.Setup(svc => svc.AddTaskAsync(newTask)).ReturnsAsync(taskCreated);
 
-            // Act
             var result = await _taskController.Create(newTask);
 
-            // Assert
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(nameof(TaskController.GetById), createdAtActionResult.ActionName);
         }
@@ -66,28 +101,22 @@ namespace TaskManagement.Tests.Controllers
         [Fact]
         public async Task Update_ShouldReturnBadRequest_WhenIdsDoNotMatch()
         {
-            // Arrange
-            var task = new TaskModel { Id = Guid.NewGuid(), Title = "Updated Task" };
+            var task = new TaskDto { Id = Guid.NewGuid(), Title = "Updated Task" };
 
-            // Act
             var result = await _taskController.Update(Guid.NewGuid(), task);
 
-            // Assert
-            Assert.IsType<BadRequestResult>(result);
+            Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
         public async Task Delete_ShouldReturnNoContent_WhenTaskIsDeleted()
         {
-            // Arrange
             var taskId = Guid.NewGuid();
 
             _taskServiceMock.Setup(svc => svc.DeleteTaskAsync(taskId)).Returns(Task.CompletedTask);
 
-            // Act
             var result = await _taskController.Delete(taskId);
 
-            // Assert
             Assert.IsType<NoContentResult>(result);
         }
     }

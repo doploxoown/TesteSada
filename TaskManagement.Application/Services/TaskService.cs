@@ -1,44 +1,76 @@
-﻿using TaskManagement.Domain.Entities;
+﻿using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Interfaces.Services;
+using TaskManagement.Application.Mappers;
 using TaskManagement.Domain.Enums;
 using TaskManagement.Domain.Interfaces.Repositories;
-using TaskManagement.Domain.Interfaces.Services;
 
 namespace TaskManagement.Application.Services
 {
+    /// <summary>
+    /// Serviço para gerenciar tarefas.
+    /// </summary>
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
 
+        /// <summary>
+        /// Construtor do serviço, recebe a interface do repositório TaskRepository.
+        /// </summary>
+        /// <param name="context">Interface do TaskRepository.</param>
         public TaskService(ITaskRepository taskRepository)
         {
             _taskRepository = taskRepository;
         }
 
-        public async Task<IEnumerable<TaskModel>> GetAllTasksAsync()
+        /// <summary>
+        /// Obtém todas as tarefas.
+        /// </summary>
+        public async Task<IEnumerable<TaskDto>> GetAllTasksAsync()
         {
-            return await _taskRepository.GetAllAsync();
+            var tasks = await _taskRepository.GetAllAsync();
+            return tasks.Select(t => t.ToDto());
         }
 
-        public async Task<IEnumerable<TaskModel>> GetFilteredTasksAsync(ETaskStatus? status, DateTime? dueDate)
+        /// <summary>
+        /// Obtém as tarefas filtradas por status e/ou data de vencimento.
+        /// </summary>
+        public async Task<IEnumerable<TaskDto>> GetFilteredTasksAsync(ETaskStatus? status, DateTime? dueDate)
         {
-            return await _taskRepository.GetFilteredTasksAsync(status, dueDate);
+            var tasks = await _taskRepository.GetFilteredTasksAsync(status, dueDate);
+            return tasks.Select(t => t.ToDto());
         }
 
-        public async Task<TaskModel?> GetTaskByIdAsync(Guid id)
+        /// <summary>
+        /// Obtém uma tarefa pelo ID.
+        /// </summary>
+        public async Task<TaskDto?> GetTaskByIdAsync(Guid id)
         {
-            return await _taskRepository.GetByIdAsync(id);
+            var task = await _taskRepository.GetByIdAsync(id);
+            return task?.ToDto();
         }
 
-        public async Task AddTaskAsync(TaskModel task)
+        /// <summary>
+        /// Adiciona uma nova tarefa.
+        /// </summary>
+        public async Task<TaskDto> AddTaskAsync(CreateTaskDto createTaskDto)
         {
+            var task = createTaskDto.ToEntity();
             await _taskRepository.AddAsync(task);
+            return task.ToDto();
         }
 
-        public async Task UpdateTaskAsync(TaskModel task)
+        /// <summary>
+        /// Atualiza uma tarefa existente.
+        /// </summary>
+        public async Task UpdateTaskAsync(TaskDto taskDto)
         {
+            var task = taskDto.ToEntity();
             await _taskRepository.UpdateAsync(task);
         }
 
+        /// <summary>
+        /// Exclui uma tarefa pelo ID.
+        /// </summary>
         public async Task DeleteTaskAsync(Guid id)
         {
             await _taskRepository.DeleteAsync(id);

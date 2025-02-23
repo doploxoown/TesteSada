@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManagement.Application.Services;
 using TaskManagement.Domain.Interfaces.Repositories;
-using TaskManagement.Domain.Interfaces.Services;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Repositories;
+using TaskManagementAPI.Middleware;
+using TaskManagement.Application.Interfaces.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ValidationMiddleware>();
 
 app.UseHttpsRedirection();
 
