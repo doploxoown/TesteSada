@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TaskManagement.Application.Services;
-using TaskManagement.Domain.Entities;
+using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Interfaces.Services;
 using TaskManagement.Domain.Enums;
-using TaskManagement.Domain.Interfaces.Services;
 
 namespace TaskManagementAPI.Controllers
 {
@@ -58,23 +57,26 @@ namespace TaskManagementAPI.Controllers
         /// <returns>Lista de tarefas filtradas.</returns>
         /// <response code="200">Retorna as tarefas filtradas.</response>
         [HttpGet("filter")]
-        public IActionResult GetFilteredTasks([FromQuery] ETaskStatus? status, [FromQuery] DateTime? dueDate)
+        public async Task<IActionResult> GetFilteredTasks([FromQuery] ETaskStatus? status, [FromQuery] DateTime? dueDate)
         {
-            var tasks = _taskService.GetFilteredTasksAsync(status, dueDate);
+            var tasks = await _taskService.GetFilteredTasksAsync(status, dueDate);
             return Ok(tasks);
         }
 
         /// <summary>
         /// Cria uma nova tarefa.
         /// </summary>
-        /// <param name="task">Objeto da tarefa a ser criada.</param>
+        /// <param name="createTaskDto">Objeto da tarefa a ser criada.</param>
         /// <returns>A tarefa criada.</returns>
         /// <response code="201">Tarefa criada com sucesso.</response>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] TaskModel task)
+        public async Task<IActionResult> Create([FromBody] CreateTaskDto createTaskDto)
         {
-            await _taskService.AddTaskAsync(task);
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var taskAdded = await _taskService.AddTaskAsync(createTaskDto);
+            return CreatedAtAction(nameof(GetById), new { id = taskAdded.Id }, createTaskDto);
         }
 
         /// <summary>
@@ -86,10 +88,15 @@ namespace TaskManagementAPI.Controllers
         /// <response code="204">Tarefa atualizada com sucesso.</response>
         /// <response code="400">IDs incompatíveis.</response>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] TaskModel task)
+        public async Task<IActionResult> Update(Guid id, [FromBody] TaskDto taskDto)
         {
-            if (id != task.Id) return BadRequest();
-            await _taskService.UpdateTaskAsync(task);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != taskDto.Id)
+                return BadRequest("O ID da URL não corresponde ao ID do corpo da requisição.");
+
+            await _taskService.UpdateTaskAsync(taskDto);
             return NoContent();
         }
 
